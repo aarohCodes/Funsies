@@ -1,407 +1,343 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>HarmoniQ • Dashboard</title>
-
-  <!-- Fonts / Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet"/>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-
-  <!-- Global styles -->
-  <link rel="stylesheet" href="style.css"/>
-
-  <!-- Profile-only overrides (safe, minimal) -->
-  <style>
-    .dash-body{ background:#F6F7FB; color:#0E1320; font-family:'Atkinson Hyperlegible',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
-    .dash-wrap{ display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
-    .dash-sidebar{ background:#fff; border-right:1px solid #E6E8F0; display:flex; flex-direction:column; gap:16px; padding:16px; }
-    .dash-brand{ display:flex; align-items:center; gap:10px; text-decoration:none; }
-    .dash-nav{ display:flex; flex-direction:column; gap:8px; }
-    .dash-tab{ display:flex; align-items:center; gap:10px; text-align:left; padding:10px 12px; border-radius:10px; border:0; background:transparent; cursor:pointer; font-weight:600; color:#334155; }
-    .dash-tab:hover{ background:#F2F4FA; }
-    .dash-tab.active{ background:#E9F2F7; color:#1C6E8C; }
-    .dash-tab i{ width:18px; text-align:center; }
-    .dash-bottom{ margin-top:auto; display:flex; flex-direction:column; gap:10px; }
-    .dash-user{ display:flex; gap:10px; align-items:center; }
-    .dash-avatar{ width:36px; height:36px; border-radius:50%; background:#EEF1F7; object-fit:cover; }
-    .dash-username{ font-weight:700; }
-    .dash-useremail{ font-size:12px; color:#667085; }
-    .dash-logout{ border:1px solid #E6E8F0; background:#fff; border-radius:10px; padding:8px 10px; cursor:pointer; text-align:left; }
-    .dash-logout:hover{ background:#F8FAFF; }
-    .sidebar-toggle{ border:1px solid #E6E8F0; background:#fff; border-radius:10px; padding:8px 10px; cursor:pointer; margin-right:12px; }
-    .dash-wrap.collapsed{ grid-template-columns:80px 1fr; }
-    .dash-wrap.collapsed .dash-tab span{ display:none; }
-    .dash-wrap.collapsed .dash-brand .logo-image{ display:none; }
-    .dash-wrap.collapsed .dash-user, .dash-wrap.collapsed .dash-logout{ display:none; }
-    .dash-main{ padding:20px 24px 32px; overflow-x:hidden; }
-    .dash-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-    .dash-top-left{ display:flex; align-items:center; gap:12px; }
-    .dash-title{ margin:0; font-size:28px; }
-    .chip{ padding:6px 10px; border-radius:999px; font-size:12px; background:#EEF1F9; color:#334155; }
-    .chip-good{ background:#E5F8F0; color:#157F5B; }
-    .chip-warn{ background:#FFF4E5; color:#9A6B07; }
-    .grid-2{ display:grid; gap:16px; grid-template-columns:repeat(2,minmax(0,1fr)); }
-    .grid-3{ display:grid; gap:16px; grid-template-columns:repeat(3,minmax(0,1fr)); }
-    .card{ background:#fff; border:1px solid #E6E8F0; border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(17,23,41,0.05); }
-    .card.tall{ min-height:280px; }
-    .bullet{ padding-left:18px; } .bullet li{ margin:6px 0; }
-    .kpi{ text-align:center; } .kpi-num{ font-size:40px; font-weight:800; color:#1C6E8C; } .kpi-label{ color:#667085; }
-    .pill{ background:#E8F3FA; color:#1C6E8C; padding:4px 8px; border-radius:999px; font-size:12px; }
-    .pill.warn{ background:#FFF0D6; color:#9A6B07; } .pill.bad{ background:#FDE7EA; color:#B42318; }
-    .placeholder-chart,.placeholder-stream{ height:220px; display:flex; align-items:center; justify-content:center; color:#94A3B8; border:1px dashed #E3E8EF; border-radius:12px; background:#FAFBFF; }
-    .feed{ max-height:360px; overflow:auto; display:flex; flex-direction:column; gap:12px; }
-    .feed-item{ background:#FAFBFF; border:1px solid #E6E8F0; border-radius:12px; padding:10px 12px; }
-    .handle{ color:#1C6E8C; font-weight:700; margin-right:6px; }
-    .task-form{ display:flex; gap:8px; margin-bottom:12px; }
-    .task-form input{ flex:1; padding:10px 12px; border-radius:10px; border:1px solid #E6E8F0; background:#FAFBFF; }
-    .btn-primary{ background:#1C6E8C; color:#fff; border:0; padding:10px 12px; border-radius:10px; cursor:pointer; }
-    .task-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
-    .task-list li{ padding:10px 12px; background:#FAFBFF; border:1px solid #E6E8F0; border-radius:10px; display:flex; align-items:center; justify-content:space-between; }
-    .task-list li.done{ opacity:.65; text-decoration:line-through; }
-    .tab-panel{ display:none; } .tab-panel.show{ display:block; }
-    .chart-box{ position:relative; width:100%; height:240px; } .card canvas{ width:100%!important; height:100%!important; display:block; }
-    /* Home toolbar + board (kanban-like) */
-    .toolbar{ display:grid; grid-template-columns: 1fr 2fr 1fr; gap:16px; align-items:center; }
-    .tb-left{ display:flex; align-items:center; gap:12px; } .tb-title{ font-size:26px; font-weight:800; }
-    .tb-title-icons i{ margin-left:8px; color:#6b7280; cursor:pointer; }
-    .tb-center .search{ display:flex; align-items:center; gap:10px; border:1px solid #E6E8F0; background:#fff; border-radius:12px; padding:10px 12px; }
-    .tb-center .search input{ border:0; outline:0; width:100%; font:inherit; }
-    .tb-right{ display:flex; align-items:center; gap:10px; justify-content:flex-end; }
-    .btn-lite{ border:1px solid #E6E8F0; background:#fff; border-radius:10px; padding:8px 10px; cursor:pointer; }
-    .btn-primary-sm{ background:#1C6E8C; color:#fff; border:0; border-radius:10px; padding:8px 12px; cursor:pointer; }
-    .avatars{ display:flex; align-items:center; }
-    .avatars img{ width:28px; height:28px; border-radius:50%; object-fit:cover; border:2px solid #fff; margin-left:-8px; }
-    .avatars img:first-child{ margin-left:0; } .avatars .more{ margin-left:6px; font-size:12px; color:#6b7280; }
-    .filters-row{ display:flex; justify-content:space-between; align-items:center; margin:16px 0; }
-    .btn-outline{ border:1px solid #E6E8F0; background:#fff; border-radius:10px; padding:8px 12px; cursor:pointer; }
-    .view-switch{ display:flex; gap:8px; } .btn-pill{ border:1px solid #E6E8F0; background:#fff; border-radius:999px; padding:8px 10px; cursor:pointer; }
-    .btn-pill.active{ background:#EEF2FF; border-color:#C7D2FE; }
-    .board{ display:grid; gap:16px; grid-template-columns: repeat(3, minmax(0,1fr)); }
-    .column{ display:flex; flex-direction:column; gap:12px; }
-    .col-head{ display:flex; align-items:center; gap:8px; padding:8px; }
-    .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; } .dot.low{ background:#6366f1; } .dot.done{ background:#16a34a; }
-    .col-title{ font-weight:800; } .badge{ background:#EEF1F9; color:#334155; padding:2px 8px; border-radius:999px; font-size:12px; }
-    .col-add{ margin-left:auto; border:1px solid #E6E8F0; background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer; }
-    .card.task{ padding:14px; }
-    .task-head{ display:flex; align-items:center; } .task-head .menu{ margin-left:auto; border:0; background:transparent; cursor:pointer; color:#6b7280; }
-    .tag{ font-size:12px; padding:4px 8px; border-radius:999px; }
-    .tag.low{ background:#EEF2FF; color:#4338CA; } .tag.high{ background:#FFE4E6; color:#B42318; } .tag.done{ background:#DCFCE7; color:#166534; }
-    .task-title{ margin:8px 0 4px; font-weight:800; } .task-desc{ margin:0 0 10px; color:#667085; }
-    .thumb{ width:100%; height:140px; object-fit:cover; border-radius:12px; margin:6px 0; }
-    .task-meta{ display:flex; align-items:center; justify-content:space-between; }
-    .avatars.sm img{ width:24px; height:24px; }
-    .counters{ display:flex; gap:12px; color:#6b7280; font-size:13px; }
-    @media (max-width:1100px){ .grid-3{ grid-template-columns:1fr; } .grid-2{ grid-template-columns:1fr; }
-      .toolbar{ grid-template-columns:1fr; } .filters-row{ flex-direction:column; gap:10px; align-items:stretch; } .board{ grid-template-columns:1fr; } }
-  </style>
-
-  <!-- Chart.js -->
+  <meta charset="utf-8" />
+  <title>HarmoniQ – Workspace</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <!-- Charts & Map -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Auth0 SPA -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+
+  <style>
+    :root{
+      --bg:#F6F8FC;
+      --panel:#FFFFFF;
+      --ink:#0F172A;
+      --muted:#667085;
+      --line:#E6E8F0;
+
+      --rose:#D90368;          /* Dogwood rose */
+      --rose-300:#ff4fa0;
+      --cerulean:#1C6E8C;      /* Primary */
+      --cerulean-50:#E6F1F5;
+      --charcoal:#274156;      /* Sidebar */
+      --ok:#16a34a;
+      --warn:#f59e0b;
+
+      --radius:16px;
+      --shadow:0 10px 30px rgba(2,6,23,.08);
+      --shadow-sm:0 6px 18px rgba(2,6,23,.06);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:
+        radial-gradient(1200px 900px at -200px -200px, #FFE2EE 0%, rgba(255,226,238,0) 60%),
+        radial-gradient(1200px 900px at 110% -100px, #E2F0F6 0%, rgba(226,240,246,0) 65%),
+        var(--bg);
+      color:var(--ink);
+      font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* ===== Layout */
+    .app{ display:grid; grid-template-columns: 260px 1fr; min-height:100vh; }
+    .app.collapsed{ grid-template-columns: 92px 1fr; }
+
+    /* ===== Sidebar */
+    .side{
+      background:var(--charcoal);
+      color:#E7EEF6;
+      padding:18px 12px;
+      display:flex; flex-direction:column; justify-content:space-between;
+      position:sticky; top:0; height:100vh;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px; padding:6px 8px; text-decoration:none;
+      margin-bottom:14px;
+    }
+    .brand img.brand-icon{ width:38px; height:38px; object-fit:contain; }
+    .brand img.brand-text{ height:20px; object-fit:contain; }
+
+    .nav, .nav-bottom{ display:flex; flex-direction:column; gap:8px; }
+    .nav-btn{
+      height:46px; width:100%;
+      display:flex; align-items:center; gap:12px; padding:0 12px;
+      background:transparent; border:0; color:#E7EEF6; border-radius:14px; cursor:pointer;
+      transition:background .18s, color .18s, box-shadow .18s, transform .06s;
+    }
+    .nav-btn i{ width:22px; min-width:22px; text-align:center; }
+    .nav-btn:hover{ background:#1e3341; }
+    .nav-btn.active{
+      background:linear-gradient(135deg, var(--rose) 0%, var(--rose-300) 100%);
+      color:#fff; box-shadow:0 12px 28px rgba(217,3,104,.35);
+    }
+    .nav-sep{ height:2px; background:rgba(255,255,255,.22); border-radius:999px; margin:8px 10px; }
+
+    /* User profile in sidebar */
+    .user-card{
+      display:flex; align-items:center; gap:10px; padding:10px; border-radius:14px;
+      background:rgba(255,255,255,.06);
+    }
+    .user-avatar{
+        width:38px; height:38px; border-radius:50%;
+        object-fit:cover; object-position:center;
+        background:#1e3341;
+        border:2px solid rgba(255,255,255,.25);
+    }
+
+    .user-meta{ display:flex; flex-direction:column; line-height:1.1; }
+    .user-name{ font-weight:700; color:#fff;}
+    .user-email{ font-size:12px; color:#cdd7e0; }
+
+    /* Collapsed state */
+    .app.collapsed .brand img.brand-text{ display:none; }
+    .app.collapsed .nav-btn{ justify-content:center; padding:0; }
+    .app.collapsed .nav-btn span{ display:none; }
+    .app.collapsed .user-meta{ display:none; }
+    .app.collapsed .user-card{ justify-content:center; }
+
+    /* ===== Topbar */
+    .top{
+      height:72px; backdrop-filter:saturate(1.2) blur(6px);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 22px; position:sticky; top:0; z-index:5;
+      background:rgba(255,255,255,.85); border-bottom:1px solid var(--line);
+    }
+    .hamburger{ width:40px; height:40px; border-radius:12px; border:1px solid var(--line);
+      background:#fff; cursor:pointer; display:grid; place-items:center; }
+    .badges{ display:flex; gap:10px; }
+    .chip{ padding:7px 12px; border-radius:999px; font-size:12px; background:#EEF4FF; color:#334155; border:1px solid #E6E8F0; }
+    .chip.ok{ background:#ECFDF5; color:#065f46; border-color:#a7f3d0;}
+    .chip.warn{ background:#FFF7E6; color:#92400e; border-color:#fde68a;}
+
+    /* ===== Content */
+    .main{ padding:24px; }
+    h1{ margin:10px 0 16px; font-size:30px; }
+    h3{ margin:0 0 10px; }
+    .grid-3{ display:grid; grid-template-columns: repeat(3, 1fr); gap:18px; }
+    .grid-2{ display:grid; grid-template-columns: 2fr 1.2fr; gap:18px; }
+    .card{
+      background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow:var(--shadow); padding:16px;
+    }
+    .card-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .muted{ color:var(--muted); }
+    .chart-box{ width:100%; height:260px; }
+    .btn{ font-weight:600; border-radius:12px; padding:10px 14px; cursor:pointer; border:1px solid transparent; }
+    .btn-primary{ background:var(--cerulean); color:#fff; box-shadow:0 10px 24px rgba(28,110,140,.25); }
+    .btn-ghost{ background:#fff; border:1px solid var(--line); }
+    .list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; }
+    .list li{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; background:#fff; box-shadow:var(--shadow-sm); }
+    .pill{ padding:6px 10px; border-radius:999px; font-size:12px; background:#EEF4FF; color:#334155; border:1px solid #E6E8F0; white-space:nowrap; }
+    .pill.warn{ background:#FFF7E6; color:#92400e; border-color:#fde68a; }
+    .pill.bad{ background:#FFF1F4; color:#9f1239; border-color:#fecdd3; }
+    .pill.ok{ background:#ECFDF5; color:#065f46; border-color:#a7f3d0; }
+
+    .table-wrap{ max-height:300px; overflow:auto; border:1px solid var(--line); border-radius:14px; }
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); }
+    thead tr{ background:#FAFBFF; position:sticky; top:0; }
+
+    .panel{ display:none; } .panel.show{ display:block; }
+
+    @media (max-width:1100px){ .grid-3{ grid-template-columns:1fr; } .grid-2{ grid-template-columns:1fr; } }
+
+    /* ===== Gemini Chat (floating) */
+    .chat-fab{
+      position:fixed; right:22px; bottom:22px; width:56px; height:56px; border-radius:50%;
+      background:linear-gradient(135deg,var(--rose),var(--rose-300)); color:#fff;
+      display:grid; place-items:center; cursor:pointer; box-shadow:0 18px 40px rgba(217,3,104,.35); z-index:20;
+    }
+    .chat-panel{
+      position:fixed; right:22px; bottom:90px; width:360px; max-height:60vh; display:none; flex-direction:column;
+      background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; z-index:25;
+    }
+    .chat-panel.show{ display:flex; }
+    .chat-head{ padding:12px 14px; border-bottom:1px solid var(--line); font-weight:700; display:flex; align-items:center; justify-content:space-between;}
+    .chat-feed{ padding:12px; overflow:auto; flex:1; display:flex; flex-direction:column; gap:10px; background:var(--cerulean-50);}
+    .bubble{ padding:10px 12px; border-radius:12px; max-width:85%; box-shadow:var(--shadow-sm); }
+    .me{ align-self:flex-end; background:#fff; border:1px solid var(--line);}
+    .ai{ align-self:flex-start; background:#fff; border:1px solid var(--line);}
+    .chat-input{ display:flex; gap:8px; padding:10px; border-top:1px solid var(--line); background:#fff;}
+    .chat-input textarea{ flex:1; resize:none; height:44px; padding:10px; border:1px solid var(--line); border-radius:10px; }
+  </style>
 </head>
-<body class="dash-body">
 
-  <div class="dash-wrap" id="appShell">
+<body>
+  <div id="shell" class="app">
     <!-- Sidebar -->
-    <!-- Expandable sidebar (shows labels when expanded) -->
-<aside id="sidebar" class="rail">
-  <div class="rail-top">
-    <!-- Brand: icon + wordmark (links home) -->
-    <a href="index.html" class="brand">
-      <img src="Assets/Logo.png" class="brand-icon" alt="HarmoniQ icon">
-      <img src="Assets/navLogo.png" class="brand-text" alt="HarmoniQ">
-    </a>
+    <aside class="side">
+      <div class="nav">
+        <a href="index.html" class="brand" title="HarmoniQ Home">
+          <img src="Assets/Logo.png" class="brand-icon" alt="HarmoniQ">
+          <img src="Assets/navLogo.png" class="brand-text" alt="HarmoniQ">
+        </a>
 
-    <!-- Primary nav -->
-    <button class="rail-btn active" data-tab="home">
-      <i class="fa-solid fa-house"></i>
-      <span class="label">Home</span>
-    </button>
+        <button class="nav-btn active" data-tab="dashboard"><i class="fa-solid fa-house"></i><span>Home</span></button>
+        <button class="nav-btn" data-tab="sentiment"><i class="fa-solid fa-face-smile"></i><span>Live Sentiment</span></button>
+        <button class="nav-btn" data-tab="outages"><i class="fa-solid fa-bolt"></i><span>Outage Predictor</span></button>
+      </div>
 
-    <button class="rail-btn" data-tab="dashboard">
-      <i class="fa-solid fa-gauge-high"></i>
-      <span class="label">Dashboard</span>
-    </button>
+      <div class="nav-bottom">
+        <div id="userCard" class="user-card" title="Profile">
+          <img id="userPicture" class="user-avatar" src="" alt="Profile">
+          <div class="user-meta">
+            <div id="userName" class="user-name">Siri A</div>
+            <div id="userEmail" class="user-email">siri@example.com</div>
+          </div>
+        </div>
 
-    <button class="rail-btn" data-tab="sentiment">
-      <i class="fa-solid fa-face-smile"></i>
-      <span class="label">Live Sentiment</span>
-    </button>
-
-    <button class="rail-btn" data-tab="feedback">
-      <i class="fa-solid fa-comments"></i>
-      <span class="label">Feedback Stream</span>
-    </button>
-
-    <button class="rail-btn" data-tab="outages">
-      <i class="fa-solid fa-bolt"></i>
-      <span class="label">Outage Predictor</span>
-    </button>
-  </div>
-
-  <div class="rail-bottom">
-    <button class="rail-btn" data-tab="tasks">
-      <i class="fa-solid fa-list-check"></i>
-      <span class="label">Tasks</span>
-    </button>
-
-    <button class="rail-btn" data-tab="settings">
-      <i class="fa-solid fa-gear"></i>
-      <span class="label">Settings</span>
-    </button>
-
-    <div class="rail-sep"></div>
-
-    <button id="logoutBtnRail" class="rail-btn danger">
-      <i class="fa-solid fa-right-from-bracket"></i>
-      <span class="label">Logout</span>
-    </button>
-  </div>
-</aside>
-
-
+        <div class="nav-sep"></div>
+        <button class="nav-btn" data-tab="tasks"><i class="fa-solid fa-list-check"></i><span>Tasks</span></button>
+        <button class="nav-btn" data-tab="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
+        <button id="logoutBtn" class="nav-btn"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></button>
+      </div>
+    </aside>
 
     <!-- Main -->
-    <main class="dash-main">
-      <!-- Top bar -->
-      <header class="dash-top">
-        <div class="dash-top-left">
-          <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">
-            <i class="fa-solid fa-bars"></i>
-          </button>
-          <h1 id="dashGreeting" class="dash-title">Hi, Siri 👋</h1>
+    <main class="main">
+      <div class="top">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button id="toggle" class="hamburger" aria-label="Toggle sidebar"><i class="fa-solid fa-bars"></i></button>
+          <div id="greet" style="font-weight:800; font-size:18px;">Hi, Siri 👋</div>
         </div>
-        <div class="dash-top-actions">
-          <span class="chip chip-good">Uptime 99.97%</span>
-          <span class="chip chip-warn">3 open tasks</span>
+        <div class="badges">
+          <span class="chip ok">Uptime 99.97%</span>
+          <span id="openTasksBadge" class="chip warn">0 open tasks</span>
         </div>
-      </header>
+      </div>
 
-      <!-- HOME (kanban-like) -->
-      <section class="tab-panel show" id="tab-home">
-        <div class="toolbar card">
-          <div class="tb-left">
-            <div class="tb-title">Mobile App</div>
-            <div class="tb-title-icons">
-              <i class="fa-regular fa-pen-to-square"></i>
-              <i class="fa-regular fa-copy"></i>
-              <i class="fa-solid fa-link"></i>
-            </div>
-          </div>
-          <div class="tb-center">
-            <div class="search">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input placeholder="Search for anything..." />
-            </div>
-          </div>
-          <div class="tb-right">
-            <button class="btn-lite"><i class="fa-regular fa-calendar"></i></button>
-            <button class="btn-lite"><i class="fa-regular fa-bell"></i></button>
-            <div class="avatars">
-              <img src="https://i.pravatar.cc/28?img=1" alt="">
-              <img src="https://i.pravatar.cc/28?img=2" alt="">
-              <img src="https://i.pravatar.cc/28?img=3" alt="">
-              <span class="more">+2</span>
-            </div>
-            <button class="btn-primary-sm"><i class="fa-solid fa-user-plus"></i> Invite</button>
-            <button class="btn-lite"><i class="fa-solid fa-ellipsis"></i></button>
-          </div>
-        </div>
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="panel show">
+        <h1>Hi, <span id="firstName">Siri</span> 👋</h1>
 
-        <div class="filters-row">
-          <div class="left">
-            <button class="btn-outline"><i class="fa-solid fa-filter"></i> Filter</button>
-            <button class="btn-outline"><i class="fa-regular fa-calendar"></i> Today</button>
-            <button class="btn-outline"><i class="fa-solid fa-bars"></i> Group</button>
-          </div>
-          <div class="right view-switch">
-            <button class="btn-pill active"><i class="fa-solid fa-table-columns"></i></button>
-            <button class="btn-pill"><i class="fa-solid fa-list"></i></button>
-          </div>
-        </div>
-
-        <div class="board">
-          <!-- Column 1 -->
-          <div class="column">
-            <div class="col-head">
-              <span class="dot low"></span><span class="col-title">To Do</span>
-              <span class="badge">2</span>
-              <button class="col-add"><i class="fa-solid fa-plus"></i></button>
-            </div>
-
-            <div class="card task">
-              <div class="task-head"><span class="tag low">Low</span><button class="menu"><i class="fa-solid fa-ellipsis"></i></button></div>
-              <div class="task-title">Brainstorming</div>
-              <p class="task-desc">Bring diverse ideas; explore user experience improvements.</p>
-              <div class="task-meta">
-                <div class="avatars sm"><img src="https://i.pravatar.cc/24?img=4"><img src="https://i.pravatar.cc/24?img=5"></div>
-                <div class="counters"><span><i class="fa-regular fa-comment"></i> 12</span><span><i class="fa-regular fa-folder"></i> 3</span></div>
-              </div>
-            </div>
-
-            <div class="card task">
-              <div class="task-head"><span class="tag high">High</span><button class="menu"><i class="fa-solid fa-ellipsis"></i></button></div>
-              <div class="task-title">Research</div>
-              <p class="task-desc">Collect data to create an optimal customer journey.</p>
-              <div class="task-meta">
-                <div class="avatars sm"><img src="https://i.pravatar.cc/24?img=6"></div>
-                <div class="counters"><span><i class="fa-regular fa-comment"></i> 10</span><span><i class="fa-regular fa-folder"></i> 3</span></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Column 2 -->
-          <div class="column">
-            <div class="col-head">
-              <span class="dot low"></span><span class="col-title">On Progress</span>
-              <span class="badge">2</span>
-              <button class="col-add"><i class="fa-solid fa-plus"></i></button>
-            </div>
-
-            <div class="card task">
-              <div class="task-head"><span class="tag low">Low</span><button class="menu"><i class="fa-solid fa-ellipsis"></i></button></div>
-              <div class="task-title">Onboarding Illustrations</div>
-              <img src="https://images.unsplash.com/photo-1549880181-56a44cf4a9a3?q=80&w=600&auto=format&fit=crop" class="thumb" alt="">
-              <div class="task-meta">
-                <div class="avatars sm"><img src="https://i.pravatar.cc/24?img=7"><img src="https://i.pravatar.cc/24?img=8"></div>
-                <div class="counters"><span><i class="fa-regular fa-comment"></i> 14</span><span><i class="fa-regular fa-folder"></i> 15</span></div>
-              </div>
-            </div>
-
-            <div class="card task">
-              <div class="task-head"><span class="tag low">Low</span><button class="menu"><i class="fa-solid fa-ellipsis"></i></button></div>
-              <div class="task-title">Moodboard</div>
-              <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=600&auto=format&fit=crop" class="thumb" alt="">
-              <div class="task-meta">
-                <div class="avatars sm"><img src="https://i.pravatar.cc/24?img=9"></div>
-                <div class="counters"><span><i class="fa-regular fa-comment"></i> 9</span><span><i class="fa-regular fa-folder"></i> 10</span></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Column 3 -->
-          <div class="column">
-            <div class="col-head">
-              <span class="dot done"></span><span class="col-title">Done</span>
-              <span class="badge">2</span>
-              <button class="col-add"><i class="fa-solid fa-plus"></i></button>
-            </div>
-
-            <div class="card task">
-              <div class="task-head"><span class="tag done">Completed</span><button class="menu"><i class="fa-solid fa-ellipsis"></i></button></div>
-              <div class="task-title">Mobile App Design</div>
-              <img src="https://images.unsplash.com/photo-1604147706283-d7119b5b822c?q=80&w=600&auto=format&fit=crop" class="thumb" alt="">
-              <div class="task-meta">
-                <div class="avatars sm"><img src="https://i.pravatar.cc/24?img=11"></div>
-                <div class="counters"><span><i class="fa-regular fa-comment"></i> 12</span><span><i class="fa-regular fa-folder"></i> 15</span></div>
-              </div>
-            </div>
-
-            <div class="card task">
-              <div class="task-head"><span class="tag done">Completed</span><button class="menu"><i class="fa-solid fa-ellipsis"></i></button></div>
-              <div class="task-title">Design System</div>
-              <p class="task-desc">Adopt the new UI from previous sprint.</p>
-              <div class="task-meta">
-                <div class="avatars sm"><img src="https://i.pravatar.cc/24?img=12"></div>
-                <div class="counters"><span><i class="fa-regular fa-comment"></i> 12</span><span><i class="fa-regular fa-folder"></i> 15</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- DASHBOARD (3 charts) -->
-      <section class="tab-panel" id="tab-dashboard">
         <div class="grid-3">
-          <div class="card kpi">
-            <div class="kpi-num" id="kpiCHI">83</div>
-            <div class="kpi-label">Customer Happiness Index</div>
-            <div class="chart-box"><canvas id="chiGauge"></canvas></div>
-          </div>
           <div class="card">
-            <h3>Sentiment (24h Trend)</h3>
-            <div class="chart-box"><canvas id="chiTrend"></canvas></div>
+            <div class="card-header"><h3>Customer Happiness Index</h3><span class="pill ok">Stable</span></div>
+            <div style="font-size:56px; font-weight:800; color:var(--rose); line-height:1;">83</div>
+            <p class="muted" style="margin-top:6px;">Overall sentiment up <strong>3%</strong> since yesterday.</p>
           </div>
+
           <div class="card">
-            <h3>Outage Probability by Region</h3>
-            <div class="chart-box"><canvas id="outageBar"></canvas></div>
+            <div class="card-header"><h3>Sentiment (24h Trend)</h3></div>
+            <div class="chart-box"><canvas id="trendChart"></canvas></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Outage Probability by Region</h3></div>
+            <div class="chart-box"><canvas id="barChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:18px;">
+          <div class="card">
+            <div class="card-header">
+              <h3>Gemini Suggestions</h3>
+              <button id="aiTriageBtn" class="btn btn-primary">Recompute now</button>
+            </div>
+            <ul id="aiTriageList" class="list" style="margin-top:10px;"></ul>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>My Tasks</h3></div>
+            <form id="taskForm" style="display:flex; gap:10px; margin:8px 0 12px;">
+              <input id="taskInput" placeholder="Add a task…" style="flex:1; padding:12px; border-radius:12px; border:1px solid var(--line); background:#fff" />
+              <button class="btn btn-primary" type="submit">Add</button>
+            </form>
+            <ul id="taskList" class="list"></ul>
           </div>
         </div>
       </section>
 
-      <!-- SENTIMENT -->
-      <section class="tab-panel" id="tab-sentiment">
-        <div class="grid-2">
-          <div class="card tall">
-            <h3>Live Sentiment</h3>
-            <div class="placeholder-stream">Streaming posts… (hook backend later)</div>
-          </div>
-          <div class="card">
-            <h3>Recent Summary</h3>
-            <p><strong>CHI:</strong> <span id="chiNow">83</span> (↑ 3d)</p>
-            <p><strong>Drivers:</strong> promos, coverage, eSIM</p>
-            <p><strong>Watch:</strong> billing complaints trending in TX</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- FEEDBACK -->
-      <section class="tab-panel" id="tab-feedback">
-        <div class="card tall">
-          <h3>Feedback Stream</h3>
-          <div class="feed">
-            <div class="feed-item"><span class="handle">@tmobile_user</span> Love the 5G speeds in Dallas! <span class="pill">positive</span></div>
-            <div class="feed-item"><span class="handle">@pm_watch</span> Billing portal timeout again. <span class="pill bad">negative</span></div>
-            <div class="feed-item"><span class="handle">@netops</span> New site upgrade helped coverage downtown. <span class="pill">positive</span></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- OUTAGES -->
-      <section class="tab-panel" id="tab-outages">
+      <!-- LIVE SENTIMENT -->
+      <section id="sentiment" class="panel">
+        <h1>Live Sentiment</h1>
         <div class="grid-2">
           <div class="card">
-            <h3>Regional Risk Heatmap</h3>
-            <div class="placeholder-chart">Heatmap placeholder</div>
+            <div class="card-header">
+              <h3>Reddit/Twitter Stream</h3>
+              <div>
+                <button id="loadCommentsBtn" class="btn btn-ghost">Load sample</button>
+                <button id="classifyBtn" class="btn btn-primary">Classify</button>
+              </div>
+            </div>
+            <div style="margin:6px 0 12px;">
+              <label class="muted">Filter:</label>
+              <select id="sentFilter" style="padding:10px; border-radius:10px; border:1px solid var(--line); background:#fff; margin-left:6px;">
+                <option value="all">All</option>
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+                <option value="neutral">Neutral</option>
+              </select>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Source</th><th>Text</th><th>Label</th><th>Score</th></tr></thead>
+                <tbody id="commentsBody"><tr><td colspan="4" class="muted" style="text-align:center;padding:22px;">No data</td></tr></tbody>
+              </table>
+            </div>
           </div>
+
           <div class="card">
-            <h3>Predictions</h3>
-            <ul class="bullet" id="predList">
-              <li>Dallas-Fort Worth: <span class="pill">low</span></li>
-              <li>Houston: <span class="pill warn">medium</span></li>
-              <li>Austin: <span class="pill bad">high</span></li>
-            </ul>
+            <div class="card-header"><h3>Competitor Comparison (CHI)</h3></div>
+            <div class="chart-box"><canvas id="competitorChart"></canvas></div>
+            <p id="sentSummary" class="muted" style="margin-top:10px;"></p>
           </div>
         </div>
       </section>
 
-      <!-- TASKS -->
-      <section class="tab-panel" id="tab-tasks">
-        <div class="card">
-          <h3>PM To-Dos</h3>
-          <form id="taskForm" class="task-form">
-            <input id="taskInput" placeholder="Add next action…"/>
-            <button class="btn-primary" type="submit"><i class="fa-solid fa-plus"></i> Add</button>
-          </form>
-          <ul id="taskList" class="task-list"></ul>
+      <!-- OUTAGE PREDICTOR -->
+      <section id="outages" class="panel">
+        <h1>Outage Predictor</h1>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3>Heatmap (demo)</h3></div>
+            <div id="map" style="height:380px; border-radius:14px; overflow:hidden;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Predict by Region</h3></div>
+            <label class="muted" for="regionSel">Region</label>
+            <select id="regionSel" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);margin:8px 0 12px;background:#fff;">
+              <option>Dallas</option><option>Houston</option><option>Austin</option><option>San Antonio</option>
+            </select>
+            <button id="predictBtn" class="btn btn-primary">Predict</button>
+            <div id="predictOut" style="margin-top:12px;"></div>
+          </div>
         </div>
       </section>
 
-      <!-- SETTINGS -->
-      <section class="tab-panel" id="tab-settings">
-        <div class="card">
-          <h3>Settings</h3>
-          <p>Connect datasources, set alert thresholds, manage team.</p>
-        </div>
-      </section>
+      <!-- Optional -->
+      <section id="tasks" class="panel"><h1>Tasks</h1><p class="muted">Use the task list on the Dashboard.</p></section>
+      <section id="settings" class="panel"><h1>Settings</h1><p class="muted">Coming soon.</p></section>
     </main>
   </div>
 
-  <!-- Auth0 + page logic -->
-  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+  <!-- Floating Gemini Chat -->
+  <button id="chatFab" class="chat-fab" title="Ask HarmoniQ AI"><i class="fa-solid fa-message"></i></button>
+  <div id="chatPanel" class="chat-panel" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
+    <div class="chat-head">
+      <div id="chatTitle"><i class="fa-solid fa-sparkles" style="color:var(--rose);"></i> HarmoniQ Assistant</div>
+      <button id="chatClose" class="btn btn-ghost" style="padding:6px 10px;">Close</button>
+    </div>
+    <div id="chatFeed" class="chat-feed">
+      <div class="bubble ai">Hi! I can triage issues, suggest next actions, and summarize sentiment. Ask me anything.</div>
+    </div>
+    <div class="chat-input">
+      <textarea id="chatInput" placeholder="Ask about outages, CHI, or feedback…"></textarea>
+      <button id="chatSend" class="btn btn-primary">Send</button>
+    </div>
+  </div>
+
   <script src="profile-auth.js"></script>
 </body>
 </html>

@@ -1,226 +1,284 @@
-// profile-auth.js – Auth guard + UI + charts + CSV loader (final)
-let auth0Client;
-const REDIRECT_BASE = "http://127.0.0.1:8000"; // or http://localhost:8000
+// ===== Config =====
+const BACKEND = "http://127.0.0.1:5001";          // your API (Gemini proxy etc.)
+const REDIRECT_BASE = "http://127.0.0.1:8000";    // keep consistent across app
 
-// CSV paths to try (first that exists is used)
-const CSV_PATHS = [
-  "Assets/outage_predictions.csv",
-  "Assets/sub.csv"
-];
+let auth0Client = null;
 
+// ===== Auth0 =====
 async function configureAuth0() {
   if (auth0Client) return auth0Client;
-  const res = await fetch("./auth_config.json");
-  const cfg = await res.json();
+  const cfg = await (await fetch("./auth_config.json")).json();
   auth0Client = await auth0.createAuth0Client({
     domain: cfg.domain,
     clientId: cfg.clientId,
-    authorizationParams: {
-      redirect_uri: `${REDIRECT_BASE}/profile.html`
-    },
+    authorizationParams: { redirect_uri: `${REDIRECT_BASE}/profile.html` },
     cacheLocation: "localstorage"
   });
   return auth0Client;
 }
 
-/* ------------ CSV helper ------------ */
-async function tryFetchText(path){
-  try{
-    const r = await fetch(path, { cache: "no-cache" });
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.text();
-  }catch(e){
-    console.warn(`[csv] could not load ${path}:`, e.message || e);
-    return null;
-  }
-}
-async function loadCsvTextFrom(paths){
-  for(const p of paths){
-    const txt = await tryFetchText(p);
-    if(txt) return { txt, path: p };
-  }
-  throw new Error("No CSV found at configured paths.");
-}
-function parseOutageCsv(txt){
-  const rows = txt.trim().split(/\r?\n/).map(r => r.split(",").map(c => c.trim()));
-  const header = rows[0].map(h => h.toLowerCase());
-  let regionIdx = header.findIndex(h => /region|area|city|location/.test(h));
-  let probIdx = header.findIndex(h => /prob|chance|score|likelihood|outage/.test(h));
-
-  let dataRows = rows;
-  if (regionIdx !== -1 || probIdx !== -1) dataRows = rows.slice(1);
-  if (regionIdx === -1) regionIdx = 0;
-  if (probIdx === -1) probIdx = 1;
-
-  const labels = [], values = [];
-  for(const r of dataRows){
-    const region = r[regionIdx];
-    const raw = parseFloat(r[probIdx]);
-    if(!region || Number.isNaN(raw)) continue;
-    const pct = raw <= 1 ? raw * 100 : raw; // accept 0–1 or %
-    labels.push(region);
-    values.push(Math.max(0, Math.min(100, pct)));
-  }
-  return { labels, values };
-}
-
-/* ------------ Charts ------------ */
-function renderChiGauge(canvas, chi=83){
-  if(!canvas || typeof Chart === "undefined") return;
-  new Chart(canvas, {
-    type: "doughnut",
-    data: { labels:["CHI",""], datasets:[{ data:[chi,100-chi], borderWidth:0, cutout:"70%" }] },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{enabled:false} }
-    }
-  });
-}
-function renderChiTrend(canvas){
-  if(!canvas || typeof Chart === "undefined") return;
-  const points=[68,72,74,73,75,79,80,82,83];
-  new Chart(canvas, {
-    type:"line",
-    data:{ labels:["04:00","06:00","08:00","10:00","12:00","14:00","16:00","18:00","Now"],
-      datasets:[{ data:points, tension:.35, borderWidth:3, fill:false }] },
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false} },
-      scales:{ y:{ suggestedMin:50, suggestedMax:100 } }
-    }
-  });
-}
-async function renderOutageBar(canvas){
-  if(!canvas || typeof Chart === "undefined") return;
-  try{
-    const { txt, path } = await loadCsvTextFrom(CSV_PATHS);
-    const { labels, values } = parseOutageCsv(txt);
-    if(!labels.length){ canvas.replaceWith(makeNote(`No rows found in ${path}. Need "region, probability".`)); return; }
-    new Chart(canvas, {
-      type:"bar",
-      data:{ labels, datasets:[{ data:values, borderWidth:0, borderRadius:8, label:"Outage Probability (%)" }] },
-      options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false} },
-        scales:{ y:{ suggestedMin:0, suggestedMax:100, ticks:{ callback:v=>v+"%" } } }
-      }
-    });
-  }catch(e){
-    console.warn("[chart] outage bar error:", e);
-    canvas.replaceWith(makeNote("Could not load outage CSV. Place file at Assets/outage_predictions.csv or Assets/sub.csv."));
-  }
-}
-function makeNote(text){
-  const div = document.createElement("div");
-  div.className = "placeholder-chart";
-  div.textContent = text;
-  return div;
-}
-
-/* ------------ Main ------------ */
-async function requireAuthAndRender(){
+// ===== App Boot =====
+async function bootApp() {
   const client = await configureAuth0();
 
-  // Complete redirect if returning from Auth0
-  if (location.search.includes("code=") || location.search.includes("state=")){
+  // Handle callback
+  if (location.search.includes("code=") || location.search.includes("state=")) {
     await client.handleRedirectCallback();
     history.replaceState({}, document.title, location.pathname);
   }
 
   // Guard
-  const isAuthed = await client.isAuthenticated();
-  if(!isAuthed){ location.href = "login.html"; return; }
+  if (!(await client.isAuthenticated())) {
+    location.href = "login.html";
+    return;
+  }
 
-  // User info
+  // User
   const user = await client.getUser();
   const name = user?.name || "there";
+  const first = name.split(" ")[0];
+
+  document.getElementById("greet").textContent = `Hi, ${first} 👋`;
+  document.getElementById("firstName").textContent = first;
+
+  const picUrl =
+    (user && user.picture) ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(first)}&background=274156&color=fff&size=96`;
+
+  const avatar = document.getElementById("userPicture");
+  avatar.src = picUrl;
+  avatar.alt = name;
+  avatar.onerror = () => {
+    avatar.onerror = null;
+    avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(first)}&background=274156&color=fff&size=96`;
+  };
+
   const email = user?.email || "";
-  const nameEl = document.getElementById("userName");
-  const emailEl = document.getElementById("userEmail");
-  const picEl = document.getElementById("userPicture");
-  const greetEl = document.getElementById("dashGreeting");
-  if(nameEl) nameEl.textContent = name;
-  if(emailEl) emailEl.textContent = email;
-  if(greetEl) greetEl.textContent = `Hi, ${name.split(" ")[0]} 👋`;
-  if(picEl && user?.picture){ picEl.src = user.picture; picEl.alt = name; }
+  document.getElementById("userName").textContent = name;
+  document.getElementById("userEmail").textContent = email;
 
   // Logout
   document.getElementById("logoutBtn")?.addEventListener("click", () => {
     client.logout({ logoutParams: { returnTo: `${REDIRECT_BASE}/index.html` } });
   });
-  document.getElementById("logoutBtnRail")?.addEventListener("click", () => {
-  client.logout({ logoutParams: { returnTo: `${REDIRECT_BASE}/index.html` } });
-});
 
-  // Tabs
-  // support both the old text tabs and the new rail buttons
-    const tabs = Array.from(document.querySelectorAll(".dash-tab, .rail-btn"));
-
-  const panels = {
-    home: document.getElementById("tab-home"),
-    dashboard: document.getElementById("tab-dashboard"),
-    sentiment: document.getElementById("tab-sentiment"),
-    feedback: document.getElementById("tab-feedback"),
-    outages: document.getElementById("tab-outages"),
-    tasks: document.getElementById("tab-tasks"),
-    settings: document.getElementById("tab-settings"),
-  };
-  function showTab(id){
-    tabs.forEach(b => b.classList.toggle("active", b.dataset.tab === id));
-    Object.entries(panels).forEach(([k,el]) => el.classList.toggle("show", k===id));
-    window.scrollTo({ top:0, behavior:"smooth" });
-  }
-  tabs.forEach(btn => btn.addEventListener("click", () => showTab(btn.dataset.tab)));
-
-  document.querySelectorAll(".q-link")?.forEach(a => {
-    a.addEventListener("click", () => showTab(a.dataset.go));
+  // Sidebar collapse/expand
+  document.getElementById("toggle")?.addEventListener("click", () => {
+    document.getElementById("shell")?.classList.toggle("collapsed");
   });
 
-  // Tasks (local)
+  // Tabs
+  const btns = [...document.querySelectorAll(".nav-btn")];
+  const panels = ["dashboard","sentiment","outages","tasks","settings"]
+    .reduce((acc,id)=> (acc[id]=document.getElementById(id), acc), {});
+  function show(id){
+    btns.forEach(b => b.classList.toggle("active", b.dataset.tab===id));
+    Object.entries(panels).forEach(([k,el]) => el.classList.toggle("show", k===id));
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  btns.forEach(b => b.addEventListener("click", () => show(b.dataset.tab)));
+  show("dashboard");
+
+  // Charts
+  const trendEl = document.getElementById("trendChart");
+  if (trendEl) {
+    new Chart(trendEl, {
+      type:"line",
+      data:{ labels:["04:00","08:00","12:00","16:00","20:00","Now"],
+        datasets:[{ data:[61,64,68,71,79,83], borderColor:"#D90368", fill:false, tension:.35, pointRadius:0 }]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales:{ y:{ suggestedMin:50, suggestedMax:100, grid:{color:"#eef2f7"} }, x:{ grid:{display:false}}}}
+    });
+  }
+
+  const barEl = document.getElementById("barChart");
+  if (barEl) {
+    new Chart(barEl, {
+      type:"bar",
+      data:{ labels:["Dallas","Houston","Austin"],
+        datasets:[{ data:[35,72,28], backgroundColor:["#1C6E8C","#D90368","#F59E0B"], borderRadius:10 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ suggestedMax:100 }}}
+    });
+  }
+
+  const compEl = document.getElementById("competitorChart");
+  if (compEl) {
+    new Chart(compEl, {
+      type:"bar",
+      data:{ labels:["HarmoniQ","Competitor A","Competitor B"],
+        datasets:[{ data:[83,76,79], backgroundColor:["#D90368","#9CA3AF","#9CA3AF"], borderRadius:10 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ suggestedMax:100 }}}
+    });
+  }
+
+  // Gemini Suggestions
+  async function aiTriage(){
+    try{
+      const payload = {
+        chi:83,
+        chi_trend:[68,72,74,73,75,79,80,82,83],
+        outages:(window.__outages||[{region:"Dallas",probability:0.35},{region:"Houston",probability:0.72},{region:"Austin",probability:0.28}]),
+        sentiment:{ pos:58, neg:29, neu:13 },
+        incidents:[], backlog:[]
+      };
+      const r = await fetch(`${BACKEND}/ai/triage`, {
+        method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload)
+      });
+      const data = await r.json();
+      const ul = document.getElementById("aiTriageList");
+      ul.innerHTML = "";
+      data.prioritized_tasks.forEach(t=>{
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <div><strong>${t.title}</strong><br><small class="muted">${t.why}</small></div>
+          <div style="display:flex;gap:6px;">
+            <span class="pill ${t.priority==='P0'?'bad':t.priority==='P1'?'warn':'ok'}">${t.priority}</span>
+            <span class="pill">${t.impact}</span>
+            <span class="pill">${t.effort}</span>
+          </div>`;
+        ul.appendChild(li);
+        addTask(`${t.priority}: ${t.title}`);
+      });
+    }catch(e){ console.error(e); alert("AI triage failed."); }
+  }
+  document.getElementById("aiTriageBtn")?.addEventListener("click", aiTriage);
+  aiTriage();
+
+  // Local Tasks
   const taskForm = document.getElementById("taskForm");
   const taskInput = document.getElementById("taskInput");
   const taskList = document.getElementById("taskList");
-  const KEY = "hq.tasks";
-  let tasks = JSON.parse(localStorage.getItem(KEY) || "[]");
-  function renderTasks(){
-    if(!taskList) return;
-    taskList.innerHTML = "";
-    tasks.forEach((t,i) => {
-      const li = document.createElement("li");
-      li.className = t.done ? "done" : "";
-      li.innerHTML = `<span>${t.text}</span>
-        <div class="row">
-          <button class="btn-primary" data-done="${i}">${t.done ? "Undone" : "Done"}</button>
-          <button class="dash-logout" data-del="${i}">Delete</button>
+  const KEY="hq.tasks";
+  let tasks = JSON.parse(localStorage.getItem(KEY)||"[]");
+  function save(){ localStorage.setItem(KEY, JSON.stringify(tasks)); }
+  function render(){
+    taskList.innerHTML="";
+    tasks.forEach((t,i)=>{
+      const li=document.createElement("li");
+      li.className=t.done?"done":"";
+      li.innerHTML=`<div><strong>${t.text}</strong></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" data-done="${i}">${t.done?"Undone":"Done"}</button>
+          <button class="btn btn-ghost" data-del="${i}">Delete</button>
         </div>`;
       taskList.appendChild(li);
     });
+    document.getElementById("openTasksBadge").textContent = `${tasks.filter(t=>!t.done).length} open tasks`;
   }
-  function save(){ localStorage.setItem(KEY, JSON.stringify(tasks)); }
-  taskForm?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const v = taskInput.value.trim();
-    if(!v) return;
-    tasks.unshift({ text:v, done:false });
-    taskInput.value = "";
-    save(); renderTasks();
+  function addTask(text){ tasks.unshift({text,done:false}); save(); render(); }
+  taskForm?.addEventListener("submit",(e)=>{ e.preventDefault(); const v=taskInput.value.trim(); if(!v) return; addTask(v); taskInput.value=""; });
+  taskList?.addEventListener("click",(e)=>{
+    const d=e.target.dataset;
+    if("done" in d){ const i=+d.done; tasks[i].done=!tasks[i].done; save(); render(); }
+    if("del" in d){ const i=+d.del; tasks.splice(i,1); save(); render(); }
   });
-  taskList?.addEventListener("click", (e) => {
-    const d = e.target.dataset || {};
-    if("done" in d){ const i=+d.done; tasks[i].done=!tasks[i].done; save(); renderTasks(); }
-    if("del" in d){ const i=+d.del; tasks.splice(i,1); save(); renderTasks(); }
+  render();
+
+  // Live Sentiment
+  let COMMENTS=[];
+  const tbody=document.getElementById("commentsBody");
+  function drawRows(items){
+    if(!items.length){
+      tbody.innerHTML=`<tr><td colspan="4" class="muted" style="text-align:center;padding:22px;">No rows</td></tr>`;
+      return;
+    }
+    tbody.innerHTML=items.map(x=>`
+      <tr>
+        <td>${x.source||""}</td>
+        <td>${x.text}</td>
+        <td><span class="pill ${x.label==='negative'?'bad':x.label==='positive'?'':'warn'}">${x.label||'neutral'}</span></td>
+        <td>${(x.score??0.5).toFixed(2)}</td>
+      </tr>`).join("");
+  }
+  async function loadSample(){
+    const r=await fetch(`${BACKEND}/sentiment/mock`); COMMENTS=await r.json();
+    drawRows(COMMENTS.map(c=>({...c,label:"neutral",score:0.5})));
+  }
+  async function classify(){
+    if(!COMMENTS.length) await loadSample();
+    const r=await fetch(`${BACKEND}/ai/sentiment`,{
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({comments:COMMENTS})
+    });
+    const out=await r.json();
+    COMMENTS=out.items.map(it=>({ text:it.text, source:"reddit", label:it.label, score:it.score }));
+    const filter=document.getElementById("sentFilter").value;
+    drawRows(COMMENTS.filter(x=>filter==="all"?true:x.label===filter));
+    document.getElementById("sentSummary").textContent = out.summary || "";
+  }
+  document.getElementById("loadCommentsBtn")?.addEventListener("click", loadSample);
+  document.getElementById("classifyBtn")?.addEventListener("click", classify);
+  document.getElementById("sentFilter")?.addEventListener("change",(e)=>{
+    const val=e.target.value; drawRows(COMMENTS.filter(x=>val==="all"?true:x.label===val));
   });
-  renderTasks();
 
-  // Sidebar toggle
-  document.getElementById("sidebarToggle")?.addEventListener("click", () => {
-    document.getElementById("appShell")?.classList.toggle("collapsed");
+  // Outage Map + Predict
+  function initMap(){
+    const el=document.getElementById("map"); if(!el||typeof L==="undefined") return;
+    const map=L.map(el).setView([32.7767,-96.7970],6);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{ attribution:'&copy; OpenStreetMap' }).addTo(map);
+    const pts=[
+      { name:"Dallas", lat:32.7767, lng:-96.7970, p:0.35 },
+      { name:"Houston", lat:29.7604, lng:-95.3698, p:0.72 },
+      { name:"Austin", lat:30.2672, lng:-97.7431, p:0.28 },
+    ];
+    window.__outages = pts.map(x=>({region:x.name, probability:x.p}));
+    pts.forEach(x=>L.circle([x.lat,x.lng],{
+      radius:15000,
+      color: x.p>0.6?"#D90368":(x.p>0.4?"#F59E0B":"#1C6E8C")
+    }).addTo(map).bindPopup(`${x.name}: ${Math.round(x.p*100)}%`));
+  }
+  initMap();
+
+  async function predict(){
+    const region=document.getElementById("regionSel").value;
+    const out=document.getElementById("predictOut");
+    const r=await fetch(`${BACKEND}/predict/outage?region=${encodeURIComponent(region)}`);
+    const j=await r.json();
+    out.innerHTML=`<div class="pill ${j.label==='high'?'bad':j.label==='medium'?'warn':'ok'}">${j.region}: ${j.probability}% (${j.label})</div>`;
+  }
+  document.getElementById("predictBtn")?.addEventListener("click", predict);
+
+  // Gemini Chat
+  const chatFab = document.getElementById("chatFab");
+  const chatPanel = document.getElementById("chatPanel");
+  const chatClose = document.getElementById("chatClose");
+  const chatFeed = document.getElementById("chatFeed");
+  const chatInput = document.getElementById("chatInput");
+  const chatSend = document.getElementById("chatSend");
+
+  function pushBubble(text, who="me"){
+    const b = document.createElement("div");
+    b.className = `bubble ${who}`;
+    b.textContent = text;
+    chatFeed.appendChild(b);
+    chatFeed.scrollTop = chatFeed.scrollHeight;
+  }
+
+  async function askGemini(prompt){
+    try{
+      const r = await fetch(`${BACKEND}/ai/chat`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ prompt })
+      });
+      const j = await r.json();
+      return j.reply || "(no response)";
+    }catch(e){
+      console.error(e);
+      return "Hmm, I couldn't reach the AI service.";
+    }
+  }
+
+  chatFab?.addEventListener("click", () => chatPanel.classList.toggle("show"));
+  chatClose?.addEventListener("click", () => chatPanel.classList.remove("show"));
+  chatSend?.addEventListener("click", async () => {
+    const msg = chatInput.value.trim(); if(!msg) return;
+    pushBubble(msg, "me"); chatInput.value = "";
+    const reply = await askGemini(msg);
+    pushBubble(reply, "ai");
   });
-
-  // Default tab (home like the screenshot)
-  showTab("home");
-
-  // Charts (Dashboard tab)
-  renderChiGauge(document.getElementById("chiGauge"), 83);
-  renderChiTrend(document.getElementById("chiTrend"));
-  renderOutageBar(document.getElementById("outageBar"));
+  chatInput?.addEventListener("keydown", (e)=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); chatSend.click(); }});
 }
 
-document.addEventListener("DOMContentLoaded", requireAuthAndRender);
+document.addEventListener("DOMContentLoaded", bootApp);
