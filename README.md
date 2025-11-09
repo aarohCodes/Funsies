@@ -321,3 +321,4 @@ This project is provided as-is for educational and demonstration purposes.
 
 For issues or questions, please refer to the project repository.
 
+# HarmoniQ
