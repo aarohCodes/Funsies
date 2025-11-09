@@ -143,13 +143,13 @@ const configureClient = async () => {
     });
 };
 
-const login = async () => {
-    await auth0Client.loginWithRedirect({
-        authorizationParams: {
-            redirect_uri: window.location.origin + "/frontend/profile.html",
-        },
-    });
-};
+// const login = async () => {
+//     await auth0Client.loginWithRedirect({
+//         authorizationParams: {
+//             redirect_uri: window.location.origin + "/frontend/profile.html",
+//         },
+//     });
+// };
 
 document.addEventListener("DOMContentLoaded", function () {
     addScrollEffects();
@@ -161,13 +161,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const loginBtn = document.getElementById("loginBtn");
     const startReadingBtn = document.getElementById("startReadingBtn");
 
+
     if (loginBtn) {
-        loginBtn.addEventListener("click", login);
+        loginBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            console.log("Login button clicked → navigating to login.html");
+            window.location.href = "login.html"; // Go to your new login page
+        });
     }
 
-    if (startReadingBtn) {
-        startReadingBtn.addEventListener("click", login);
-    }
 
     const featureCards = document.querySelectorAll(".feature-card");
     featureCards.forEach((card) => {
