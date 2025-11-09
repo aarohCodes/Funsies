@@ -110,7 +110,7 @@ async function bootApp() {
   if (compEl) {
     new Chart(compEl, {
       type:"bar",
-      data:{ labels:["HarmoniQ","Spectrum","Verizon"],
+      data:{ labels:["T-Mobile","Spectrum","Verizon"],
         datasets:[{ data:[83,76,79], backgroundColor:["#D90368","#9CA3AF","#9CA3AF"], borderRadius:10 }] },
       options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ suggestedMax:100 }}}
     });
