@@ -1,0 +1,22 @@
+{
+  "name": "whatdoesdafoxsay-frontend",
+  "version": "1.0.0",
+  "description": "Reading practice application for children with dyslexia",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server -p 8000 -c-1 -o index.html",
+    "dev": "http-server -p 8000 -c-1 -o index.html",
+    "serve": "http-server -p 8000 -c-1"
+  },
+  "keywords": [
+    "dyslexia",
+    "reading",
+    "education",
+    "accessibility"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

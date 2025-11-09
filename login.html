@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login • HarmoniQ</title>
+
+  <!-- Prevent flash: same light bg as the page -->
+  <style>html,body{background:#F6F7FB}</style>
+
+  <!-- Fonts / Icons (matches index) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <!-- Your global styles -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="login2-body">
+  <div class="login2-wrap">
+    <!-- LEFT column: logo + form -->
+    <section class="login2-left">
+      <nav class="login2-brand">
+        <a href="index.html" class="brand-link" aria-label="Go to homepage">
+            <img src="Assets/Logo.png" alt="" class="logo-icon-img" />
+            <img src="Assets/Title.png" alt="HarmoniQ" class="logo-image" />
+        </a>
+      </nav>
+
+
+      <div class="login2-card">
+        <h1 class="login2-title">Login</h1>
+
+        <!-- Social buttons -->
+        <div class="login2-sso">
+          <button id="btnGoogle" class="sso-btn">
+            <i class="fa-brands fa-google"></i> Continue with Google
+          </button>
+          <button id="btnMicrosoft" class="sso-btn sso-ms">
+            <i class="fa-brands fa-microsoft"></i> Continue with Microsoft
+          </button>
+        </div>
+
+        <div class="login2-sep"><span>or</span></div>
+
+        <!-- Email/password (will use Auth0 Universal Login when you click Login) -->
+        <form id="emailForm">
+          <label class="sr-only" for="email">Email</label>
+          <input id="email" class="login2-input" type="email" placeholder="Username or email" autocomplete="username" />
+
+          <label class="sr-only" for="password">Password</label>
+          <div class="login2-password">
+            <input id="password" class="login2-input" type="password" placeholder="Password" autocomplete="current-password" />
+            <a class="login2-forgot" href="#" id="forgotLink">Forgot password?</a>
+          </div>
+
+          <label class="login2-remember">
+            <input type="checkbox" /> Remember me
+          </label>
+
+          <button class="login2-primary" id="btnLogin" type="submit">Login</button>
+        </form>
+
+        <p class="login2-foot">Don’t have an account? <a href="#" id="signupLink">Sign up</a></p>
+      </div>
+    </section>
+
+    <!-- RIGHT column: illustration / copy -->
+    <!-- RIGHT column -->
+    <section class="login2-right">
+    <div class="login2-graphic">
+        <img src="Assets/project_illustration.png" alt="Progress Illustration" />
+    </div>
+    </section>
+
+  </div>
+
+  <!-- Auth0 SDK (CDN) -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+
+  <!-- Minimal page-specific auth wiring (no global script.js here) -->
+  <script>
+    let auth0Client;
+
+    async function configureAuth0() {
+      const res = await fetch("./auth_config.json");
+      const cfg = await res.json();
+      auth0Client = await auth0.createAuth0Client({
+        domain: cfg.domain,
+        clientId: cfg.clientId,
+        authorizationParams: {
+          redirect_uri: window.location.origin + "/profile.html"   // <-- your callback
+        },
+        cacheLocation: "localstorage"
+      });
+    }
+
+    function bindUI() {
+      const emailForm = document.getElementById("emailForm");
+      const btnGoogle = document.getElementById("btnGoogle");
+      const btnMicrosoft = document.getElementById("btnMicrosoft");
+      const forgotLink = document.getElementById("forgotLink");
+      const signupLink = document.getElementById("signupLink");
+
+      // Email/password via Universal Login (no manual email values here; Auth0 hosts the form)
+      emailForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await auth0Client.loginWithRedirect(); // will open Universal Login
+      });
+
+      // Google social
+      btnGoogle.addEventListener("click", async () => {
+        await auth0Client.loginWithRedirect({
+          authorizationParams: { connection: "google-oauth2" }
+        });
+      });
+
+      // Microsoft social (pick the connection name you enabled—see note below)
+      btnMicrosoft.addEventListener("click", async () => {
+        await auth0Client.loginWithRedirect({
+          authorizationParams: { connection: "windowslive" } // or "microsoft" / "azuread"
+        });
+      });
+
+      // Optional: Forgot/Sign up shortcuts (both route to Universal Login)
+      forgotLink.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await auth0Client.loginWithRedirect({
+          // Some tenants use a reset-password ticket flow instead; this opens hosted page
+          authorizationParams: {}
+        });
+      });
+
+      signupLink.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await auth0Client.loginWithRedirect({
+          authorizationParams: { screen_hint: "signup" }
+        });
+      });
+    }
+
+    (async () => {
+      await configureAuth0();
+      bindUI();
+
+      // If user lands here coming back from Auth0 by mistake, just send them to profile
+      if (window.location.search.includes("code=") || window.location.search.includes("state=")) {
+        await auth0Client.handleRedirectCallback();
+        window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.href = "profile.html";
+      }
+    })();
+  </script>
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+    <script src="login-auth.js"></script>
+
+</body>
+</html>

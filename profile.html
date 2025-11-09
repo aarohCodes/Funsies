@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>HarmoniQ – Workspace</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <!-- Charts & Map -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Auth0 SPA -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+
+  <style>
+    :root{
+      --bg:#F6F8FC;
+      --panel:#FFFFFF;
+      --ink:#0F172A;
+      --muted:#667085;
+      --line:#E6E8F0;
+
+      --rose:#D90368;          /* Dogwood rose */
+      --rose-300:#ff4fa0;
+      --cerulean:#1C6E8C;      /* Primary */
+      --cerulean-50:#E6F1F5;
+      --charcoal:#274156;      /* Sidebar */
+      --ok:#16a34a;
+      --warn:#f59e0b;
+
+      --radius:16px;
+      --shadow:0 10px 30px rgba(2,6,23,.08);
+      --shadow-sm:0 6px 18px rgba(2,6,23,.06);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:
+        radial-gradient(1200px 900px at -200px -200px, #FFE2EE 0%, rgba(255,226,238,0) 60%),
+        radial-gradient(1200px 900px at 110% -100px, #E2F0F6 0%, rgba(226,240,246,0) 65%),
+        var(--bg);
+      color:var(--ink);
+      font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* ===== Layout */
+    .app{ display:grid; grid-template-columns: 260px 1fr; min-height:100vh; }
+    .app.collapsed{ grid-template-columns: 92px 1fr; }
+
+    /* ===== Sidebar */
+    .side{
+      background:var(--charcoal);
+      color:#E7EEF6;
+      padding:18px 12px;
+      display:flex; flex-direction:column; justify-content:space-between;
+      position:sticky; top:0; height:100vh;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px; padding:6px 8px; text-decoration:none;
+      margin-bottom:14px;
+    }
+    .brand img.brand-icon{ width:38px; height:38px; object-fit:contain; }
+    .brand img.brand-text{ height:20px; object-fit:contain; }
+
+    .nav, .nav-bottom{ display:flex; flex-direction:column; gap:8px; }
+    .nav-btn{
+      height:46px; width:100%;
+      display:flex; align-items:center; gap:12px; padding:0 12px;
+      background:transparent; border:0; color:#E7EEF6; border-radius:14px; cursor:pointer;
+      transition:background .18s, color .18s, box-shadow .18s, transform .06s;
+    }
+    .nav-btn i{ width:22px; min-width:22px; text-align:center; }
+    .nav-btn:hover{ background:#1e3341; }
+    .nav-btn.active{
+      background:linear-gradient(135deg, var(--rose) 0%, var(--rose-300) 100%);
+      color:#fff; box-shadow:0 12px 28px rgba(217,3,104,.35);
+    }
+    .nav-sep{ height:2px; background:rgba(255,255,255,.22); border-radius:999px; margin:8px 10px; }
+
+    /* User profile in sidebar */
+    .user-card{
+      display:flex; align-items:center; gap:10px; padding:10px; border-radius:14px;
+      background:rgba(255,255,255,.06);
+    }
+    .user-avatar{
+        width:38px; height:38px; border-radius:50%;
+        object-fit:cover; object-position:center;
+        background:#1e3341;
+        border:2px solid rgba(255,255,255,.25);
+    }
+
+    .user-meta{ display:flex; flex-direction:column; line-height:1.1; }
+    .user-name{ font-weight:700; color:#fff;}
+    .user-email{ font-size:12px; color:#cdd7e0; }
+
+    /* Collapsed state */
+    .app.collapsed .brand img.brand-text{ display:none; }
+    .app.collapsed .nav-btn{ justify-content:center; padding:0; }
+    .app.collapsed .nav-btn span{ display:none; }
+    .app.collapsed .user-meta{ display:none; }
+    .app.collapsed .user-card{ justify-content:center; }
+
+    /* ===== Topbar */
+    .top{
+      height:72px; backdrop-filter:saturate(1.2) blur(6px);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 22px; position:sticky; top:0; z-index:5;
+      background:rgba(255,255,255,.85); border-bottom:1px solid var(--line);
+    }
+    .hamburger{ width:40px; height:40px; border-radius:12px; border:1px solid var(--line);
+      background:#fff; cursor:pointer; display:grid; place-items:center; }
+    .badges{ display:flex; gap:10px; }
+    .chip{ padding:7px 12px; border-radius:999px; font-size:12px; background:#EEF4FF; color:#334155; border:1px solid #E6E8F0; }
+    .chip.ok{ background:#ECFDF5; color:#065f46; border-color:#a7f3d0;}
+    .chip.warn{ background:#FFF7E6; color:#92400e; border-color:#fde68a;}
+
+    /* ===== Content */
+    .main{ padding:24px; }
+    h1{ margin:10px 0 16px; font-size:30px; }
+    h3{ margin:0 0 10px; }
+    .grid-3{ display:grid; grid-template-columns: repeat(3, 1fr); gap:18px; }
+    .grid-2{ display:grid; grid-template-columns: 2fr 1.2fr; gap:18px; }
+    .card{
+      background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow:var(--shadow); padding:16px;
+    }
+    .card-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .muted{ color:var(--muted); }
+    .chart-box{ width:100%; height:260px; }
+    .btn{ font-weight:600; border-radius:12px; padding:10px 14px; cursor:pointer; border:1px solid transparent; }
+    .btn-primary{ background:var(--cerulean); color:#fff; box-shadow:0 10px 24px rgba(28,110,140,.25); }
+    .btn-ghost{ background:#fff; border:1px solid var(--line); }
+    .list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; }
+    .list li{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; background:#fff; box-shadow:var(--shadow-sm); }
+    .pill{ padding:6px 10px; border-radius:999px; font-size:12px; background:#EEF4FF; color:#334155; border:1px solid #E6E8F0; white-space:nowrap; }
+    .pill.warn{ background:#FFF7E6; color:#92400e; border-color:#fde68a; }
+    .pill.bad{ background:#FFF1F4; color:#9f1239; border-color:#fecdd3; }
+    .pill.ok{ background:#ECFDF5; color:#065f46; border-color:#a7f3d0; }
+
+    .table-wrap{ max-height:300px; overflow:auto; border:1px solid var(--line); border-radius:14px; }
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); }
+    thead tr{ background:#FAFBFF; position:sticky; top:0; }
+
+    .panel{ display:none; } .panel.show{ display:block; }
+
+    @media (max-width:1100px){ .grid-3{ grid-template-columns:1fr; } .grid-2{ grid-template-columns:1fr; } }
+
+    /* ===== Gemini Chat (floating) */
+    .chat-fab{
+      position:fixed; right:22px; bottom:22px; width:56px; height:56px; border-radius:50%;
+      background:linear-gradient(135deg,var(--rose),var(--rose-300)); color:#fff;
+      display:grid; place-items:center; cursor:pointer; box-shadow:0 18px 40px rgba(217,3,104,.35); z-index:20;
+    }
+    .chat-panel{
+      position:fixed; right:22px; bottom:90px; width:360px; max-height:60vh; display:none; flex-direction:column;
+      background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; z-index:25;
+    }
+    .chat-panel.show{ display:flex; }
+    .chat-head{ padding:12px 14px; border-bottom:1px solid var(--line); font-weight:700; display:flex; align-items:center; justify-content:space-between;}
+    .chat-feed{ padding:12px; overflow:auto; flex:1; display:flex; flex-direction:column; gap:10px; background:var(--cerulean-50);}
+    .bubble{ padding:10px 12px; border-radius:12px; max-width:85%; box-shadow:var(--shadow-sm); }
+    .me{ align-self:flex-end; background:#fff; border:1px solid var(--line);}
+    .ai{ align-self:flex-start; background:#fff; border:1px solid var(--line);}
+    .chat-input{ display:flex; gap:8px; padding:10px; border-top:1px solid var(--line); background:#fff;}
+    .chat-input textarea{ flex:1; resize:none; height:44px; padding:10px; border:1px solid var(--line); border-radius:10px; }
+  </style>
+</head>
+
+<body>
+  <div id="shell" class="app">
+    <!-- Sidebar -->
+    <aside class="side">
+      <div class="nav">
+        <a href="index.html" class="brand" title="HarmoniQ Home">
+          <img src="Assets/Logo.png" class="brand-icon" alt="HarmoniQ">
+          <img src="Assets/navLogo.png" class="brand-text" alt="HarmoniQ">
+        </a>
+
+        <button class="nav-btn active" data-tab="dashboard"><i class="fa-solid fa-house"></i><span>Home</span></button>
+        <button class="nav-btn" data-tab="sentiment"><i class="fa-solid fa-face-smile"></i><span>Live Sentiment</span></button>
+        <button class="nav-btn" data-tab="outages"><i class="fa-solid fa-bolt"></i><span>Outage Predictor</span></button>
+      </div>
+
+      <div class="nav-bottom">
+        <div id="userCard" class="user-card" title="Profile">
+          <img id="userPicture" class="user-avatar" src="" alt="Profile">
+          <div class="user-meta">
+            <div id="userName" class="user-name">Siri A</div>
+            <div id="userEmail" class="user-email">siri@example.com</div>
+          </div>
+        </div>
+
+        <div class="nav-sep"></div>
+        <button class="nav-btn" data-tab="tasks"><i class="fa-solid fa-list-check"></i><span>Tasks</span></button>
+        <button class="nav-btn" data-tab="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
+        <button id="logoutBtn" class="nav-btn"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="top">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button id="toggle" class="hamburger" aria-label="Toggle sidebar"><i class="fa-solid fa-bars"></i></button>
+          <div id="greet" style="font-weight:800; font-size:18px;">Hi, Siri 👋</div>
+        </div>
+        <div class="badges">
+          <span class="chip ok">Uptime 99.97%</span>
+          <span id="openTasksBadge" class="chip warn">0 open tasks</span>
+        </div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="panel show">
+        <h1>Hi, <span id="firstName">Siri</span> 👋</h1>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-header"><h3>Customer Happiness Index</h3><span class="pill ok">Stable</span></div>
+            <div style="font-size:56px; font-weight:800; color:var(--rose); line-height:1;">83</div>
+            <p class="muted" style="margin-top:6px;">Overall sentiment up <strong>3%</strong> since yesterday.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Sentiment in 24 hours</h3></div>
+            <div class="chart-box"><canvas id="trendChart"></canvas></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Outage Predictor by Region</h3></div>
+            <div class="chart-box"><canvas id="barChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:18px;">
+          <div class="card">
+            <div class="card-header">
+              <h3>Gemini Suggestions</h3>
+              <button id="aiTriageBtn" class="btn btn-primary">Recompute now</button>
+            </div>
+            <ul id="aiTriageList" class="list" style="margin-top:10px;"></ul>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>My Tasks</h3></div>
+            <form id="taskForm" style="display:flex; gap:10px; margin:8px 0 12px;">
+              <input id="taskInput" placeholder="Add a task…" style="flex:1; padding:12px; border-radius:12px; border:1px solid var(--line); background:#fff" />
+              <button class="btn btn-primary" type="submit">Add</button>
+            </form>
+            <ul id="taskList" class="list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIVE SENTIMENT -->
+      <section id="sentiment" class="panel">
+        <h1>Live Sentiment</h1>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>Reddit/Twitter Stream</h3>
+            </div>
+            <div style="margin:6px 0 12px;">
+              <label class="muted">Filter:</label>
+              <select id="sentFilter" style="padding:10px; border-radius:10px; border:1px solid var(--line); background:#fff; margin-left:6px;">
+                <option value="all">All</option>
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+                <option value="neutral">Neutral</option>
+              </select>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Platform</th><th>Username</th><th>Comment</th><th>Sentiment</th><th>Engagement</th></tr></thead>
+                <tbody id="commentsBody"><tr><td colspan="5" class="muted" style="text-align:center;padding:22px;">Loading data...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Competitor Comparison</h3></div>
+            <div class="chart-box"><canvas id="competitorChart"></canvas></div>
+            <p id="sentSummary" class="muted" style="margin-top:10px;"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- OUTAGE PREDICTOR -->
+      <section id="outages" class="panel">
+        <h1>Outage Predictor</h1>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3>Heatmap (demo)</h3></div>
+            <div id="map" style="height:380px; border-radius:14px; overflow:hidden;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Predict by Region</h3></div>
+            <label class="muted" for="regionSel">Region</label>
+            <select id="regionSel" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);margin:8px 0 12px;background:#fff;">
+              <option>West</option><option>East</option><option>Midwest</option>
+            </select>
+            <button id="predictBtn" class="btn btn-primary">Predict</button>
+            <div id="predictOut" style="margin-top:12px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Optional -->
+      <section id="tasks" class="panel"><h1>Tasks</h1><p class="muted">Use the task list on the Dashboard.</p></section>
+      <section id="settings" class="panel"><h1>Settings</h1><p class="muted">Coming soon.</p></section>
+    </main>
+  </div>
+
+  <!-- Floating Gemini Chat -->
+  <button id="chatFab" class="chat-fab" title="Ask HarmoniQ AI"><i class="fa-solid fa-message"></i></button>
+  <div id="chatPanel" class="chat-panel" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
+    <div class="chat-head">
+      <div id="chatTitle"><i class="fa-solid fa-sparkles" style="color:var(--rose);"></i> HarmoniQ Assistant</div>
+      <button id="chatClose" class="btn btn-ghost" style="padding:6px 10px;">Close</button>
+    </div>
+    <div id="chatFeed" class="chat-feed">
+      <div class="bubble ai">Hi! I can triage issues, suggest next actions, and summarize sentiment. Ask me anything.</div>
+    </div>
+    <div class="chat-input">
+      <textarea id="chatInput" placeholder="Ask about outages, CHI, or feedback…"></textarea>
+      <button id="chatSend" class="btn btn-primary">Send</button>
+    </div>
+  </div>
+
+  <script src="profile-auth.js"></script>
+</body>
+</html>
