@@ -95,9 +95,9 @@ async function bootApp() {
   if (barEl) {
     new Chart(barEl, {
       type:"bar",
-      data:{ labels:["Dallas","Houston","Austin"],
-        datasets:[{ data:[35,72,28], backgroundColor:["#1C6E8C","#D90368","#F59E0B"], borderRadius:10 }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ suggestedMax:100 }}}
+      data:{ labels:["West","East","Midwest"],
+        datasets:[{ data:[32,45,23], backgroundColor:["#1C6E8C","#D90368","#F59E0B"], borderRadius:10 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ max:100, beginAtZero:true }}}
     });
   }
 
@@ -105,7 +105,7 @@ async function bootApp() {
   if (compEl) {
     new Chart(compEl, {
       type:"bar",
-      data:{ labels:["HarmoniQ","Competitor A","Competitor B"],
+      data:{ labels:["HarmoniQ","Spectrum","Verizon"],
         datasets:[{ data:[83,76,79], backgroundColor:["#D90368","#9CA3AF","#9CA3AF"], borderRadius:10 }] },
       options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ suggestedMax:100 }}}
     });
@@ -117,7 +117,7 @@ async function bootApp() {
       const payload = {
         chi:83,
         chi_trend:[68,72,74,73,75,79,80,82,83],
-        outages:(window.__outages||[{region:"Dallas",probability:0.35},{region:"Houston",probability:0.72},{region:"Austin",probability:0.28}]),
+        outages:(window.__outages||[{region:"West",probability:0.32},{region:"East",probability:0.45},{region:"Midwest",probability:0.23}]),
         sentiment:{ pos:58, neg:29, neu:13 },
         incidents:[], backlog:[]
       };
@@ -174,43 +174,45 @@ async function bootApp() {
   });
   render();
 
-  // Live Sentiment
+  // Live Sentiment - Load from JSON
   let COMMENTS=[];
   const tbody=document.getElementById("commentsBody");
+  
   function drawRows(items){
     if(!items.length){
-      tbody.innerHTML=`<tr><td colspan="4" class="muted" style="text-align:center;padding:22px;">No rows</td></tr>`;
+      tbody.innerHTML=`<tr><td colspan="5" class="muted" style="text-align:center;padding:22px;">No rows</td></tr>`;
       return;
     }
     tbody.innerHTML=items.map(x=>`
       <tr>
-        <td>${x.source||""}</td>
-        <td>${x.text}</td>
-        <td><span class="pill ${x.label==='negative'?'bad':x.label==='positive'?'':'warn'}">${x.label||'neutral'}</span></td>
-        <td>${(x.score??0.5).toFixed(2)}</td>
+        <td>${x.platform||""}</td>
+        <td>${x.username||""}</td>
+        <td>${x.comment}</td>
+        <td><span class="pill ${x.sentiment==='Negative'?'bad':x.sentiment==='Positive'?'':'warn'}">${x.sentiment||'Neutral'}</span></td>
+        <td>${x.engagement||0}</td>
       </tr>`).join("");
   }
-  async function loadSample(){
-    const r=await fetch(`${BACKEND}/sentiment/mock`); COMMENTS=await r.json();
-    drawRows(COMMENTS.map(c=>({...c,label:"neutral",score:0.5})));
+  
+  // Load JSON data automatically on page load
+  async function loadSocialData(){
+    try {
+      const response = await fetch('./Assets/social_media_feedback.json');
+      COMMENTS = await response.json();
+      drawRows(COMMENTS);
+    } catch(e) {
+      console.error("Failed to load social media data:", e);
+      tbody.innerHTML=`<tr><td colspan="5" class="muted" style="text-align:center;padding:22px;">Failed to load data</td></tr>`;
+    }
   }
-  async function classify(){
-    if(!COMMENTS.length) await loadSample();
-    const r=await fetch(`${BACKEND}/ai/sentiment`,{
-      method:"POST", headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({comments:COMMENTS})
-    });
-    const out=await r.json();
-    COMMENTS=out.items.map(it=>({ text:it.text, source:"reddit", label:it.label, score:it.score }));
-    const filter=document.getElementById("sentFilter").value;
-    drawRows(COMMENTS.filter(x=>filter==="all"?true:x.label===filter));
-    document.getElementById("sentSummary").textContent = out.summary || "";
-  }
-  document.getElementById("loadCommentsBtn")?.addEventListener("click", loadSample);
-  document.getElementById("classifyBtn")?.addEventListener("click", classify);
+  
+  // Filter handler
   document.getElementById("sentFilter")?.addEventListener("change",(e)=>{
-    const val=e.target.value; drawRows(COMMENTS.filter(x=>val==="all"?true:x.label===val));
+    const val=e.target.value; 
+    drawRows(COMMENTS.filter(x=>val==="all"?true:x.sentiment.toLowerCase()===val.toLowerCase()));
   });
+  
+  // Load data on page load
+  loadSocialData();
 
   // Outage Map + Predict
   function initMap(){

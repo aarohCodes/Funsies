@@ -1,0 +1,98 @@
+[
+  {
+    "platform": "Reddit",
+    "username": "tech_user_123",
+    "comment": "Love the new T-Mobile coverage! Signal is so much better now.",
+    "sentiment": "Positive",
+    "timestamp": "2025-11-09T10:23:00Z",
+    "engagement": 45
+  },
+  {
+    "platform": "Twitter",
+    "username": "@mobile_critic",
+    "comment": "Experiencing frequent dropped calls in downtown area. Really frustrating.",
+    "sentiment": "Negative",
+    "timestamp": "2025-11-09T09:15:00Z",
+    "engagement": 12
+  },
+  {
+    "platform": "Reddit",
+    "username": "happy_customer_99",
+    "comment": "Customer service was excellent! Helped me switch plans smoothly.",
+    "sentiment": "Positive",
+    "timestamp": "2025-11-09T08:45:00Z",
+    "engagement": 78
+  },
+  {
+    "platform": "Twitter",
+    "username": "@network_watcher",
+    "comment": "5G speeds are incredible in my area. Faster than my home WiFi!",
+    "sentiment": "Positive",
+    "timestamp": "2025-11-09T07:30:00Z",
+    "engagement": 156
+  },
+  {
+    "platform": "Reddit",
+    "username": "concerned_user",
+    "comment": "Billing issues again this month. Getting charged for services I didn't use.",
+    "sentiment": "Negative",
+    "timestamp": "2025-11-09T06:20:00Z",
+    "engagement": 34
+  },
+  {
+    "platform": "Twitter",
+    "username": "@traveler_mobile",
+    "comment": "International roaming works great. No issues during my Europe trip.",
+    "sentiment": "Positive",
+    "timestamp": "2025-11-08T22:10:00Z",
+    "engagement": 89
+  },
+  {
+    "platform": "Reddit",
+    "username": "data_user_2025",
+    "comment": "The new unlimited plan is just okay. Not much different from before.",
+    "sentiment": "Neutral",
+    "timestamp": "2025-11-08T20:05:00Z",
+    "engagement": 23
+  },
+  {
+    "platform": "Twitter",
+    "username": "@app_reviewer",
+    "comment": "Mobile app keeps crashing when I try to check my usage. Please fix!",
+    "sentiment": "Negative",
+    "timestamp": "2025-11-08T18:45:00Z",
+    "engagement": 67
+  },
+  {
+    "platform": "Reddit",
+    "username": "longtime_customer",
+    "comment": "Been with T-Mobile for 5 years. Consistent service, no complaints.",
+    "sentiment": "Positive",
+    "timestamp": "2025-11-08T16:30:00Z",
+    "engagement": 112
+  },
+  {
+    "platform": "Twitter",
+    "username": "@price_conscious",
+    "comment": "Prices went up again. Considering switching to another provider.",
+    "sentiment": "Negative",
+    "timestamp": "2025-11-08T14:15:00Z",
+    "engagement": 45
+  },
+  {
+    "platform": "Reddit",
+    "username": "tech_enthusiast",
+    "comment": "Network upgrades in my city are noticeable. Good job!",
+    "sentiment": "Positive",
+    "timestamp": "2025-11-08T12:00:00Z",
+    "engagement": 201
+  },
+  {
+    "platform": "Twitter",
+    "username": "@store_visitor",
+    "comment": "Visited the store today. Staff was helpful but wait time was too long.",
+    "sentiment": "Neutral",
+    "timestamp": "2025-11-08T10:30:00Z",
+    "engagement": 18
+  }
+]

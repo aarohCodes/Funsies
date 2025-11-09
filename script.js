@@ -46,9 +46,9 @@ const statsObserver = new IntersectionObserver((entries) => {
             const starsCount = document.getElementById("starsCount");
 
             if (wordsCount && kidsCount && starsCount) {
-                animateCounter(wordsCount, 1234, 2000);
-                animateCounter(kidsCount, 567, 2000);
-                animateCounter(starsCount, 8901, 2000);
+                animateCounter(wordsCount, 124, 2000);
+                animateCounter(kidsCount, 50, 2000);
+                animateCounter(starsCount, 250, 2000);
             }
 
             statsObserver.unobserve(entry.target);

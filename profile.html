@@ -227,12 +227,12 @@
           </div>
 
           <div class="card">
-            <div class="card-header"><h3>Sentiment (24h Trend)</h3></div>
+            <div class="card-header"><h3>Sentiment in 24 hours</h3></div>
             <div class="chart-box"><canvas id="trendChart"></canvas></div>
           </div>
 
           <div class="card">
-            <div class="card-header"><h3>Outage Probability by Region</h3></div>
+            <div class="card-header"><h3>Outage Predictor by Region</h3></div>
             <div class="chart-box"><canvas id="barChart"></canvas></div>
           </div>
         </div>
@@ -264,10 +264,6 @@
           <div class="card">
             <div class="card-header">
               <h3>Reddit/Twitter Stream</h3>
-              <div>
-                <button id="loadCommentsBtn" class="btn btn-ghost">Load sample</button>
-                <button id="classifyBtn" class="btn btn-primary">Classify</button>
-              </div>
             </div>
             <div style="margin:6px 0 12px;">
               <label class="muted">Filter:</label>
@@ -281,14 +277,14 @@
 
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Source</th><th>Text</th><th>Label</th><th>Score</th></tr></thead>
-                <tbody id="commentsBody"><tr><td colspan="4" class="muted" style="text-align:center;padding:22px;">No data</td></tr></tbody>
+                <thead><tr><th>Platform</th><th>Username</th><th>Comment</th><th>Sentiment</th><th>Engagement</th></tr></thead>
+                <tbody id="commentsBody"><tr><td colspan="5" class="muted" style="text-align:center;padding:22px;">Loading data...</td></tr></tbody>
               </table>
             </div>
           </div>
 
           <div class="card">
-            <div class="card-header"><h3>Competitor Comparison (CHI)</h3></div>
+            <div class="card-header"><h3>Competitor Comparison</h3></div>
             <div class="chart-box"><canvas id="competitorChart"></canvas></div>
             <p id="sentSummary" class="muted" style="margin-top:10px;"></p>
           </div>
@@ -308,7 +304,7 @@
             <div class="card-header"><h3>Predict by Region</h3></div>
             <label class="muted" for="regionSel">Region</label>
             <select id="regionSel" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);margin:8px 0 12px;background:#fff;">
-              <option>Dallas</option><option>Houston</option><option>Austin</option><option>San Antonio</option>
+              <option>West</option><option>East</option><option>Midwest</option>
             </select>
             <button id="predictBtn" class="btn btn-primary">Predict</button>
             <div id="predictOut" style="margin-top:12px;"></div>
