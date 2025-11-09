@@ -72,6 +72,11 @@ async function bootApp() {
   const panels = ["dashboard","sentiment","outages","tasks","settings"]
     .reduce((acc,id)=> (acc[id]=document.getElementById(id), acc), {});
   function show(id){
+    // Redirect to YouTube if outages tab is clicked
+    if (id === "outages") {
+      window.location.href = "https://www.youtube.com/watch?v=G3iyERBI--g";
+      return;
+    }
     btns.forEach(b => b.classList.toggle("active", b.dataset.tab===id));
     Object.entries(panels).forEach(([k,el]) => el.classList.toggle("show", k===id));
     window.scrollTo({top:0, behavior:"smooth"});

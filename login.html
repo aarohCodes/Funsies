@@ -40,6 +40,12 @@
           <button id="btnMicrosoft" class="sso-btn sso-ms">
             <i class="fa-brands fa-microsoft"></i> Continue with Microsoft
           </button>
+          <button id="btnApple" class="sso-btn">
+            <i class="fa-brands fa-apple"></i> Continue with Apple
+          </button>
+          <button id="btnFacebook" class="sso-btn">
+            <i class="fa-brands fa-facebook"></i> Continue with Facebook
+          </button>
         </div>
 
         <div class="login2-sep"><span>or</span></div>
@@ -100,6 +106,8 @@
       const emailForm = document.getElementById("emailForm");
       const btnGoogle = document.getElementById("btnGoogle");
       const btnMicrosoft = document.getElementById("btnMicrosoft");
+      const btnApple = document.getElementById("btnApple");
+      const btnFacebook = document.getElementById("btnFacebook");
       const forgotLink = document.getElementById("forgotLink");
       const signupLink = document.getElementById("signupLink");
 
@@ -120,6 +128,20 @@
       btnMicrosoft.addEventListener("click", async () => {
         await auth0Client.loginWithRedirect({
           authorizationParams: { connection: "windowslive" } // or "microsoft" / "azuread"
+        });
+      });
+
+      // Apple social
+      btnApple.addEventListener("click", async () => {
+        await auth0Client.loginWithRedirect({
+          authorizationParams: { connection: "apple" }
+        });
+      });
+
+      // Facebook social
+      btnFacebook.addEventListener("click", async () => {
+        await auth0Client.loginWithRedirect({
+          authorizationParams: { connection: "facebook" }
         });
       });
 
