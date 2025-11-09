@@ -1,0 +1,22 @@
+# Alternative requirements file with more flexible versions
+# Use this if the main requirements.txt fails to install
+
+Flask>=2.3.0
+flask-cors>=4.0.0
+pandas>=2.2.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+kagglehub>=0.2.1
+scipy>=1.12.0
+python-dateutil>=2.8.2
+
+# Prophet and dependencies (may need special handling)
+prophet>=1.1.5
+pystan>=3.9.0
+cmdstanpy>=1.2.0
+
+# If Prophet fails, you can comment it out and use simpler time-series methods
+# The code will fall back to alternative forecasting methods
+
