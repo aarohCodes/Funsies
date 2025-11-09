@@ -21,6 +21,13 @@ npm-debug.log*
 .env
 .env.local
 
+# Python
+server/.venv/
+server/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
 # Build outputs
 dist/
 build/
